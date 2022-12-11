@@ -21,7 +21,7 @@ pub struct Chain {
 impl Chain {
   pub fn new() -> Self {
     let blocks = Self::create_blockchain();
-    Self {blocks, difficulty: 0}
+    Self {blocks, difficulty: 15}
   }
 
   fn create_blockchain() -> Vec::<Block> {
@@ -66,7 +66,7 @@ impl Chain {
 
   fn generate_hash(&self, data: &String, timestamp: &String, previous_hash: &String, index: usize, nonce: usize) -> String {
     let mut sha256 = Sha256::new();
-    let hash_string: String = format!("{}{}{}{}", data, timestamp, previous_hash, index);
+    let hash_string: String = format!("{}{}{}{}{}", data, timestamp, previous_hash, index, nonce);
     sha256.update(hash_string);
     let hash = format!("{:X}", sha256.finalize());
     hash
@@ -76,6 +76,8 @@ impl Chain {
     let mut nonce = 0;
 
     loop {
+      print!("Proof of work: {}\n", nonce);
+
       let hash = self.generate_hash(&data, &timestamp, &previous_hash, index, nonce);
 
       if Self::hash_matches_difficulty(&hash, self.difficulty) {
@@ -88,6 +90,7 @@ impl Chain {
   }
 
   fn hash_matches_difficulty( hash: &String, difficulty: usize) -> bool {
+    
     let binary_hash = Self::hex_to_bin(hash);
     let prefix = "0".repeat(difficulty);
     binary_hash.starts_with(&prefix)
