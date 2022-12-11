@@ -8,6 +8,11 @@ fn main() {
   
   let blocks = block_chain.get_blocks();
 
-  println!("{:?}", blocks[0]);
+  println!("~~~RustChain~~~");
+
+  // todo - input block to add to blockchain
+  loop {
+
+  }
 }
 
