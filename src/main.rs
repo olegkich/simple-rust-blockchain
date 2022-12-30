@@ -1,7 +1,8 @@
 mod blockchain;
 use blockchain::Chain;
+use tiny_gradient::{GradientStr, Gradient};
 
-use std::io;
+use std::{io, ops::Index};
 
 
 fn main() {
@@ -9,14 +10,15 @@ fn main() {
 
   let mut block_chain = Chain::new();
 
-  println!("~~~RustChain~~~");
+  println!("{}", "~~~RustChain~~~".gradient(Gradient::Fruit));
   
   let stdin = io::stdin();
-  println!("\nCurrent Blockchain:\n{:?}\n\n", &block_chain.get_blocks());
+
+  println!("{}",format!("\nCurrent Blockchain length: {:?}", &block_chain.get_blocks().len()).gradient(Gradient::Atlast));
 
   loop {
     
-    print!("(/f - finish)\nWrite data to create a new block:\n");
+    print!("{}", "(/f - finish)\nWrite data to create a new block:\n".gradient(Gradient::Cristal));
 
     let mut data = String::new();
     stdin.read_line(&mut data).expect("could not read line");
@@ -28,6 +30,6 @@ fn main() {
     block_chain.generate_block(data);
   }
 
-  println!("{:?}", &block_chain.get_blocks());
+  println!("{}", format!("{:?}", &block_chain.get_blocks()).gradient(Gradient::Instagram));
 }
 

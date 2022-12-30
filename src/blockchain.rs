@@ -83,10 +83,29 @@ impl Chain {
 
 
   fn find_block(&self, data: String, timestamp: DateTime<Utc>, index: usize, previous_hash: String) -> Block{
-    let mut nonce = 0;
+    let mut nonce = 1;
+    let mut loading_counter = 0;
+
+    
 
     loop {
-      print!("Proof of work: {}\n", nonce);
+      print! ("\x1B[2J\x1B[1;1H");
+      println!("{}", "Proof of work...".gradient(Gradient::Forest));
+      
+      if loading_counter == 100 {
+        loading_counter = 1;
+      }
+
+      
+      let loading_bar = format!("{}>", "=".repeat(loading_counter));
+      let colored = loading_bar.gradient(Gradient::Forest);
+
+      println!("{}", colored);
+
+
+      if nonce % 100 == 0 {
+        loading_counter = loading_counter + 1;
+      }
 
       let hash = self.generate_hash(&data, &timestamp, &previous_hash, index, nonce);
 
