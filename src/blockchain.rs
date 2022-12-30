@@ -1,17 +1,22 @@
 use std::{str::FromStr};
+use chrono::{DateTime, Utc, Timelike};
 use sha2::{Sha256, Digest};
-
+use tiny_gradient::{Gradient, GradientStr, RGB};
 #[derive(Debug)]
 pub struct Block {
   index: usize,
   hash: String,
   previous_hash: String,
   data: String,
-  timestamp: String,
+  timestamp: DateTime<Utc>,
   difficulty: usize,
   nonce: usize
 }
 
+// seconds
+const BLOCK_GENERATION_INTERVAL: usize = 10;
+// blocks
+const DIFFICULTY_ADJUSTMENT_INTERVAL: usize  = 5;
 
 pub struct Chain {
   blocks: Vec<Block>,
@@ -21,7 +26,7 @@ pub struct Chain {
 impl Chain {
   pub fn new() -> Self {
     let blocks = Self::create_blockchain();
-    Self {blocks, difficulty: 15}
+    Self {blocks, difficulty: 1}
   }
 
   fn create_blockchain() -> Vec::<Block> {
@@ -38,7 +43,7 @@ impl Chain {
       hash,
       previous_hash: String::from_str("").unwrap(),
       data: String::new(),
-      timestamp: timestamp.to_string(),
+      timestamp,
       nonce: 0,
       difficulty: 1, 
     };
@@ -52,11 +57,15 @@ impl Chain {
     &self.blocks
   }
 
+  fn get_last_block(&self) -> &Block {
+    &self.blocks[self.blocks.len() - 1]
+  }
+
   pub fn generate_block(&mut self, data: String) {
     let chain = &self.blocks;
 
     let index = chain.len();
-    let timestamp = chrono::offset::Utc::now().to_string();
+    let timestamp = chrono::offset::Utc::now();
     let previous_hash = &self.blocks.get(index - 1).unwrap().hash;
   
     let new_block = self.find_block(data, timestamp, index, previous_hash.to_string() );
@@ -64,7 +73,7 @@ impl Chain {
     self.blocks.push(new_block);
   }
 
-  fn generate_hash(&self, data: &String, timestamp: &String, previous_hash: &String, index: usize, nonce: usize) -> String {
+  fn generate_hash(&self, data: &String, timestamp: &DateTime<Utc>, previous_hash: &String, index: usize, nonce: usize) -> String {
     let mut sha256 = Sha256::new();
     let hash_string: String = format!("{}{}{}{}{}", data, timestamp, previous_hash, index, nonce);
     sha256.update(hash_string);
@@ -72,7 +81,8 @@ impl Chain {
     hash
   }
 
-  fn find_block(&self, data: String, timestamp: String, index: usize, previous_hash: String) -> Block{
+
+  fn find_block(&self, data: String, timestamp: DateTime<Utc>, index: usize, previous_hash: String) -> Block{
     let mut nonce = 0;
 
     loop {
@@ -80,8 +90,14 @@ impl Chain {
 
       let hash = self.generate_hash(&data, &timestamp, &previous_hash, index, nonce);
 
-      if Self::hash_matches_difficulty(&hash, self.difficulty) {
-        let block = Block {data, timestamp, previous_hash, index, hash, nonce, difficulty: self.difficulty};
+      if Self::hash_matches_difficulty(&hash, self.get_difficulty(&self.get_blocks())) {
+        let block = Block {data, timestamp, previous_hash, index, hash, nonce, difficulty: self.get_difficulty(self.get_blocks())};
+
+        let time_taken = block.timestamp.num_seconds_from_midnight() - self.get_last_block().timestamp.num_seconds_from_midnight();
+        let message = format!("generated block in {} seconds with difficulty: {}", time_taken, &block.difficulty.to_string());
+        let colored = message.gradient([RGB::new(0x01, 0x00, 0x00), RGB::new(0xDA, 0x00, 0xFF)]);
+        println!("{}", colored);
+
         return block;
       }
 
@@ -90,10 +106,33 @@ impl Chain {
   }
 
   fn hash_matches_difficulty( hash: &String, difficulty: usize) -> bool {
-    
     let binary_hash = Self::hex_to_bin(hash);
     let prefix = "0".repeat(difficulty);
     binary_hash.starts_with(&prefix)
+  }
+
+  fn get_difficulty(&self, blockchain: &Vec<Block>) -> usize {
+    let last_block = self.get_last_block();
+
+    if last_block.index % 5 == 0 && last_block.index != 0 {
+      return self.get_adjusted_difficulty(last_block, blockchain);
+    } else {
+      return last_block.difficulty;
+    }
+  }
+
+  fn get_adjusted_difficulty(&self, last_block: &Block, blockchain: &Vec<Block>) -> usize {
+    let prev_adjusted_block = &blockchain[&blockchain.len() - 5];
+    let time_expected = BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
+    let time_taken = last_block.timestamp - prev_adjusted_block.timestamp;
+    
+    if (time_taken.num_seconds() as usize) < time_expected / 2 {
+      return prev_adjusted_block.difficulty.saturating_add(1);
+    } else if time_taken.num_seconds() as usize > time_expected * 2 {
+      return prev_adjusted_block.difficulty.saturating_sub(1);
+    } else {
+      return prev_adjusted_block.difficulty;
+    }
   }
 
   pub fn hex_to_bin(hex: &str) -> String {
@@ -118,7 +157,7 @@ impl Chain {
         'D' => "1101",
         'E' => "1110",
         'F' => "1111",
-        _ => "",
+        _ => ""
     }
   }
   

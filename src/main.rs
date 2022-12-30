@@ -5,11 +5,12 @@ use std::io;
 
 
 fn main() {
-  let mut block_chain = Chain::new();
-  
-  println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n~~~RustChain~~~");
-  
+  print!("{}[2J", 27 as char);
 
+  let mut block_chain = Chain::new();
+
+  println!("~~~RustChain~~~");
+  
   let stdin = io::stdin();
   println!("\nCurrent Blockchain:\n{:?}\n\n", &block_chain.get_blocks());
 
